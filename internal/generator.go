@@ -53,14 +53,7 @@ func NewGoGenerator(output Outputer, entities []string, packageName string) *GoG
 	return &GoGenerator{output: output, entities: entities, packageName: packageName}
 }
 
-func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
-	declaredKeywords := keywordMap{}
-
-	//remap enums
-	enumMap := buildEnumMap(doc)
-	reqEntities := resolveEntityDependencies(doc, g.entities, enumMap)
-
-	// Write enum const
+func (g *GoGenerator) writeEnums(enumMap map[string]enum, reqEntities []string, declaredKeywords *keywordMap) error {
 	for _, e := range enumMap {
 		if len(reqEntities) > 0 && !inArray(e.TypeName, reqEntities) {
 			continue
@@ -85,6 +78,22 @@ func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
+	declaredKeywords := keywordMap{}
+
+	//remap enums
+	enumMap := buildEnumMap(doc)
+	reqEntities := resolveEntityDependencies(doc, g.entities, enumMap)
+
+	// Write enum const
+	err := g.writeEnums(enumMap, reqEntities, &declaredKeywords)
+	if err != nil {
+		return err
 	}
 
 	imports := make(map[string]bool, 0)
@@ -144,7 +153,7 @@ func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
 
 	importsStr += "\n"
 
-	err := g.output.WriteToStart(fmt.Sprintf(Header, g.packageName, importsStr))
+	err = g.output.WriteToStart(fmt.Sprintf(Header, g.packageName, importsStr))
 	if err != nil {
 		return err
 	}

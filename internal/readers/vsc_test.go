@@ -13,10 +13,10 @@ func TestNewGitReader(t *testing.T) {
 }
 
 func TestNewGitReader_SSHPath(t *testing.T) {
-	s := NewGitReader("git@github.com:jkrajniak/sc-priv.git/schema.sql")
+	s := NewGitReader("git@github.com:VerTox/sc-priv.git/schema.sql")
 	assert.Equal(t, "master", s.branchName)
 	assert.Equal(t, "/schema.sql", s.path)
-	assert.Equal(t, "git@github.com:jkrajniak/sc-priv.git", s.repoURL)
+	assert.Equal(t, "git@github.com:VerTox/sc-priv.git", s.repoURL)
 }
 
 func TestNewGitReader_BranchName(t *testing.T) {

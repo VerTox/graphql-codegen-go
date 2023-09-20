@@ -15,5 +15,3 @@ func DiscoverReader(schemaPath string) SchemaReader {
 		return NewLocalReader(schemaPath)
 	}
 }
-
-

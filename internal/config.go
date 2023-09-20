@@ -35,8 +35,8 @@ type GOGenerate struct {
 }
 
 type Config struct {
-	Schemas   []string
-	Outputs   []OutputItem
+	Schemas []string
+	Outputs []OutputItem
 
 	InPlace     bool
 	GoGenConfig *GOGenerate
@@ -54,8 +54,8 @@ func ReadConfigFromFile(f io.Reader) (Config, error) {
 	}
 
 	c := Config{
-		Schemas:   yamlConfig.Schema,
-		Outputs:   []OutputItem{},
+		Schemas: yamlConfig.Schema,
+		Outputs: []OutputItem{},
 	}
 	for outPath, item := range yamlConfig.Generates {
 		c.Outputs = append(c.Outputs, OutputItem{

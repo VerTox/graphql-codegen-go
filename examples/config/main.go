@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/jkrajniak/graphql-codegen-go/examples/config/internal"
+	"github.com/VerTox/graphql-codegen-go/examples/config/internal"
 )
 
 func main() {

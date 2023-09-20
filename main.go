@@ -8,15 +8,14 @@ import (
 	"strings"
 )
 
-func main() {
+func initConfig() internal.Config {
+	var config internal.Config
 	configYaml := flag.String("config", "", "config yaml")
 	schemasFile := flag.String("schemas", "", "schema file (comma separated list)")
 	entitiesString := flag.String("entities", "", "comma separated list of entities (optional)")
 	packageNameString := flag.String("packageName", "", "package name")
 	outFile := flag.String("out", "", "file output name (optional, default: stdout)")
 	flag.Parse()
-
-	var config internal.Config
 	if configYaml != nil && *configYaml != "" {
 		configFile, err := os.Open(*configYaml)
 		if err != nil {
@@ -56,6 +55,12 @@ func main() {
 			},
 		}
 	}
+
+	return config
+}
+
+func main() {
+	config := initConfig()
 
 	// Combine all schemas.
 	inputSchemas, err := internal.ReadSchemas(config.Schemas)
