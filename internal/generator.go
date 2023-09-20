@@ -19,8 +19,8 @@ package %s
 %s
 }`
 	ImportTPL       = `import "%s"`
-	FieldTPL        = "  %s %s `json:\"%s\"`"
-	ListFieldTPL    = "  %s []%s `json:\"%s\"`"
+	FieldTPL        = "  %s %s `json:\"%s,omitempty\"`"
+	ListFieldTPL    = "  %s []%s `json:\"%s,omitempty\"`"
 	EnumTypeDefTPL  = "type %s %s"
 	EnumDefConstTPL = "const %s%s %s = \"%s\""
 )
@@ -172,16 +172,14 @@ func resolveType(typeName string, enumMap map[string]enum, notNull bool) (string
 	if tName, hasEnumType := enumMap[typeName]; hasEnumType {
 		typeName = tName.TypeName
 	}
+
+	importPath := ImportedLibs[typeName]
+
 	if !notNull { // if type can be nullable, use pointer
 		typeName = strings.Join([]string{"*", typeName}, "")
 	}
 
-	importPath, ok := ImportedLibs[typeName]
-	if ok {
-		return typeName, importPath
-	}
-
-	return typeName, ""
+	return typeName, importPath
 }
 
 func resolveEntityDependencies(doc *ast.SchemaDocument, reqEntities []string, enumMap map[string]enum) []string {
