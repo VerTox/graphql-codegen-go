@@ -8,6 +8,7 @@ import (
 
 type Outputer interface {
 	Write(s string) error
+	WriteToStart(s string) error
 	Writeln(s string) error
 	Close() error
 	Flush() error
@@ -19,6 +20,11 @@ type STDOutput struct {
 
 func NewSTDOutput() *STDOutput {
 	return &STDOutput{buff: []byte{}}
+}
+
+func (o *STDOutput) WriteToStart(s string) error {
+	o.buff = append([]byte(s), o.buff...)
+	return nil
 }
 
 func (o *STDOutput) Write(s string) error {
@@ -62,6 +68,12 @@ func (o *FileOutput) Write(s string) error {
 	o.buff = append(o.buff, []byte(s)...)
 	return nil
 }
+
+func (o *FileOutput) WriteToStart(s string) error {
+	o.buff = append([]byte(s), o.buff...)
+	return nil
+}
+
 func (o *FileOutput) Writeln(s string) error {
 	o.buff = append(o.buff, []byte(s)...)
 	o.buff = append(o.buff, []byte("\n")...)

@@ -11,12 +11,14 @@ const (
 // This file was generated from GraphQL schema
 
 package %s
+
+%s
 `
 
 	StructTPL = `type %s struct {
 %s
 }`
-
+	ImportTPL       = `import "%s"`
 	FieldTPL        = "  %s %s `json:\"%s\"`"
 	ListFieldTPL    = "  %s []%s `json:\"%s\"`"
 	EnumTypeDefTPL  = "type %s %s"
@@ -24,20 +26,27 @@ package %s
 )
 
 var GQLTypesToGoTypes = map[string]string{
-	"Int":     "int64",
-	"Float":   "float64",
-	"String":  "string",
-	"Boolean": "bool",
-	"ID":      "string",
+	"Int":      "int64",
+	"Float":    "float64",
+	"String":   "string",
+	"Boolean":  "bool",
+	"ID":       "string",
+	"Long":     "int64",
+	"DateTime": "time.Time",
+	"UUID":     "uuid.UUID",
+}
+
+var ImportedLibs = map[string]string{
+	"uuid.UUID": "github.com/google/uuid",
+	"time.Time": "time",
 }
 
 type GoGenerator struct {
 	entities    []string
 	enumMapType map[string]string
 
-	packageName   string
-	output        Outputer
-	disableHeader bool
+	packageName string
+	output      Outputer
 }
 
 func NewGoGenerator(output Outputer, entities []string, packageName string) *GoGenerator {
@@ -45,12 +54,6 @@ func NewGoGenerator(output Outputer, entities []string, packageName string) *GoG
 }
 
 func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
-	if !g.disableHeader {
-		if err := g.output.Writeln(fmt.Sprintf(Header, g.packageName)); err != nil {
-			return err
-		}
-	}
-
 	declaredKeywords := keywordMap{}
 
 	//remap enums
@@ -84,6 +87,8 @@ func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
 		}
 	}
 
+	imports := make(map[string]bool, 0)
+
 	for _, i := range doc.Definitions {
 		if len(reqEntities) > 0 && !inArray(i.Name, reqEntities) {
 			continue
@@ -94,11 +99,17 @@ func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
 		if i.Kind == ast.Object || i.Kind == ast.InputObject {
 			var fields []string
 			for _, f := range i.Fields {
-				typeName := resolveType(f.Type.Name(), enumMap, f.Type.NonNull)
+				typeName, importPath := resolveType(f.Type.Name(), enumMap, f.Type.NonNull)
+				if importPath != "" {
+					imports[importPath] = true
+				}
 				fieldName := strings.Title(f.Name)
 				jsonFieldName := f.Name
 				if f.Type.Elem != nil { // list type
-					elemTypeName := resolveType(f.Type.Elem.Name(), enumMap, f.Type.Elem.NonNull)
+					elemTypeName, importPath := resolveType(f.Type.Elem.Name(), enumMap, f.Type.Elem.NonNull)
+					if importPath != "" {
+						imports[importPath] = true
+					}
 					fields = append(fields, fmt.Sprintf(ListFieldTPL, fieldName, elemTypeName, jsonFieldName))
 				} else {
 					fields = append(fields, fmt.Sprintf(FieldTPL, fieldName, typeName, jsonFieldName))
@@ -125,6 +136,19 @@ func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
 		}
 	}
 
+	var importsStr string
+
+	for importPath := range imports {
+		importsStr += "\n" + fmt.Sprintf(ImportTPL, importPath)
+	}
+
+	importsStr += "\n"
+
+	err := g.output.WriteToStart(fmt.Sprintf(Header, g.packageName, importsStr))
+	if err != nil {
+		return err
+	}
+
 	if missingEntities := declaredKeywords.GetMissingKeys(g.entities); len(missingEntities) > 0 {
 		return fmt.Errorf("the following entites are not found in graphql schemas: %v", missingEntities)
 	}
@@ -132,7 +156,7 @@ func (g *GoGenerator) Generate(doc *ast.SchemaDocument) error {
 	return nil
 }
 
-func resolveType(typeName string, enumMap map[string]enum, notNull bool) string {
+func resolveType(typeName string, enumMap map[string]enum, notNull bool) (string, string) {
 	if tName, hasType := GQLTypesToGoTypes[typeName]; hasType {
 		typeName = tName
 	}
@@ -142,9 +166,14 @@ func resolveType(typeName string, enumMap map[string]enum, notNull bool) string 
 	if !notNull { // if type can be nullable, use pointer
 		typeName = strings.Join([]string{"*", typeName}, "")
 	}
-	return typeName
-}
 
+	importPath, ok := ImportedLibs[typeName]
+	if ok {
+		return typeName, importPath
+	}
+
+	return typeName, ""
+}
 
 func resolveEntityDependencies(doc *ast.SchemaDocument, reqEntities []string, enumMap map[string]enum) []string {
 	dependsOn := map[string][]string{}
@@ -200,4 +229,3 @@ func buildEnumMap(doc *ast.SchemaDocument) map[string]enum {
 	}
 	return enumMap
 }
-

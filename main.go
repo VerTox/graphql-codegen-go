@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/jkrajniak/graphql-codegen-go/internal"
+	"github.com/VerTox/graphql-codegen-go/internal"
 	"github.com/pkg/errors"
 	"os"
 	"strings"
